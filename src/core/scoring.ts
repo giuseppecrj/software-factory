@@ -6,9 +6,11 @@ export function average(nums: number[]) {
 
 export function scoreCandidate(findings: ReviewFinding[]) {
   const avg = average(findings.map((x) => x.score))
+  const strengths = findings.flatMap((x) => x.strengths)
   const blockers = findings.flatMap((x) => x.blockers)
   return {
     averageScore: Number(avg.toFixed(2)),
+    strengths,
     blockers,
     recommendation: blockers.length ? 'needs work' : avg >= 8 ? 'recommended' : 'consider',
   }

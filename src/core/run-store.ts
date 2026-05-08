@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { receiptPath, runDir, writeJson } from './artifacts'
-import type { RunReceipt } from './types'
+import type { RunReceipt, Stage } from './types'
 
 export function createRunId(prefix: string) {
   const stamp = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19)
@@ -26,7 +26,22 @@ export function initRun(root: string, runId: string) {
 }
 
 export function saveReceipt(root: string, receipt: RunReceipt) {
+  ensureRunRoots(root)
   writeJson(receiptPath(root, receipt.runId, receipt.stage), receipt)
+}
+
+export function saveFailureReceipt(root: string, stage: Stage, summary: string, next: string[] = []) {
+  const receipt: RunReceipt = {
+    runId: createRunId(stage),
+    stage,
+    status: 'failure',
+    createdAt: new Date().toISOString(),
+    summary,
+    artifacts: [],
+    next,
+  }
+  saveReceipt(root, receipt)
+  return receipt
 }
 
 export function latestRunIds(root: string) {

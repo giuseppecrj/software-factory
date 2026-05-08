@@ -41,14 +41,23 @@ export type StrategyLabel = 'conservative' | 'balanced' | 'ambitious'
 
 export type CandidateResult = {
   runId: string
+  sourcePlanRunId: string
   candidateId: string
   strategy: StrategyLabel
   branch: string
   worktreePath: string
+  bundleDir: string
+  workflowPath: string
+  templatePath: string
+  strategyBriefPath: string
+  artifacts: string[]
   summary: string
   verification: {
     checksRun: string[]
     status: 'pending' | 'passed' | 'failed'
+    summary: string
+    reportPath: string
+    detailsPath: string
   }
 }
 
@@ -58,4 +67,13 @@ export type ReviewFinding = {
   strengths: string[]
   blockers: string[]
   recommendation: string
+}
+
+export type CandidateScorecard = {
+  candidateId: string
+  averageScore: number
+  strengths: string[]
+  blockers: string[]
+  recommendation: string
+  reviewerArtifacts: string[]
 }
