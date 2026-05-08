@@ -1,7 +1,7 @@
 # dependencies (bun install)
 node_modules
 
-# output
+# build output
 out
 dist
 *.tgz
@@ -12,8 +12,8 @@ coverage
 
 # logs
 logs
-_.log
-report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
+*.log
+report.*.json
 
 # dotenv environment variable files
 .env
@@ -21,6 +21,10 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .env.test.local
 .env.production.local
 .env.local
+
+# local factory state
+.sf/
+runs/
 
 # caches
 .eslintcache

@@ -1,0 +1,3 @@
+# Scorecard
+
+Candidate: {{candidate}}

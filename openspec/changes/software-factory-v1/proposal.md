@@ -8,6 +8,7 @@ The strongest references in the research cluster converge on the same pattern:
 - the safe execution shape is **one orchestrator above isolated workers**, not peer swarms
 - the harness should stay thin, while workflow opinion lives in files, extensions, and deterministic scripts
 - parallelism is most valuable when applied to **alternative implementations and independent reviews**, not collaborative co-editing in one mutable workspace
+- TypeScript-first orchestration references like **Sandcastle** validate that a thin orchestrator plus sandbox-provider abstraction plus branch/merge strategy is already a viable shape close to what this repo wants to become, but V1 should **borrow that model rather than depend on Sandcastle directly**
 
 Without an OpenSpec change, the repo has no agreed V1 boundary, no named capabilities, and no reviewable statement of what “lean but real software factory” means. This proposal establishes that boundary before implementation starts.
 
@@ -19,7 +20,11 @@ Without an OpenSpec change, the repo has no agreed V1 boundary, no named capabil
   - isolated prototype workers for same-task fanout
   - parallel independent reviewer fanout
   - durable artifact contracts and receipts
-- Establish the minimum command surface for V1: `shape`, `plan`, `prototype`, `review`, `qa`, and `retro`.
+- Establish the minimum command surface for V1:
+  - bootstrap commands: `init`, `doctor`
+  - workflow commands: `shape`, `plan`, `prototype`, `review`, `qa`, and `retro`
+- Add explicit **user flow steps** showing how an operator goes from install → `init` → `doctor` → idea → shape → plan → multi-candidate prototype → review → QA → winner selection → retro.
+- Make **DevEx** a first-class V1 concern: commands must be easy to discover, predictable to run, and legible in both human and agent modes.
 - Require the repo to be harness-ready before worker fanout: deterministic check/test entrypoints, repo map docs, and machine-checkable workflow outputs.
 - Define worktree-first isolation for local parallel execution, while keeping the runtime boundary abstract enough to support stronger sandbox backends later.
 - Capture what V1 deliberately excludes: peer-to-peer swarms, hosted control plane, giant built-in role packs, and opaque memory systems.

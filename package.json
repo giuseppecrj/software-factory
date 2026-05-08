@@ -1,10 +1,27 @@
 {
   "name": "software-factory",
-  "module": "index.ts",
+  "version": "0.1.0",
+  "description": "Lean, composable software factory CLI",
   "type": "module",
-  "private": true,
+  "private": false,
+  "bin": {
+    "sf": "./src/cli.ts"
+  },
+  "scripts": {
+    "sf": "bun run ./src/cli.ts",
+    "init": "bun run ./src/cli.ts init",
+    "doctor": "bun run ./src/cli.ts doctor",
+    "check": "./scripts/check",
+    "test": "./scripts/test",
+    "qa": "./scripts/qa"
+  },
+  "dependencies": {
+    "incur": "^0.4.5",
+    "zod": "^4.4.3"
+  },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/node": "^25.6.2"
   },
   "peerDependencies": {
     "typescript": "^5"

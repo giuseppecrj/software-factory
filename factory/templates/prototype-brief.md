@@ -1,0 +1,3 @@
+# Prototype Brief
+
+Strategy: {{strategy}}

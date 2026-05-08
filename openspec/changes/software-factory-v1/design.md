@@ -2,6 +2,7 @@
 
 Research across the local wiki and adjacent public-reference cluster points to a consistent software-factory architecture:
 
+- **Sandcastle**: a TypeScript library for orchestrating coding agents in isolated sandboxes with a configurable branch strategy and merge-back flow. It is especially relevant because it sits close to our target shape: one `run()` entrypoint, sandbox-provider abstraction (Docker, Podman, Vercel, or custom), and explicit support for parallel AFK agents and review pipelines. The intended use here is as a **design reference**, not as a direct V1 dependency.
 - **Cursor / software factory**: the human becomes manager of asynchronous execution rather than the primary implementer; repo design and verification matter more than mystical prompting.
 - **Harness-Ready Repo**: a repo becomes agent-productive only when it is legible, enforceable, observable, and capable of passing durable learning forward.
 - **Pi / extension-first harness**: keep the runtime core intentionally small and stable; push workflow ideology into extensions, files, and resource bundles.
@@ -26,8 +27,11 @@ That requirement makes the load-bearing V1 question explicit: what is the smalle
 - Support **same-task parallel prototype generation** through isolated worktrees or equivalent local execution boundaries.
 - Support **parallel independent review passes** over candidate outputs.
 - Produce durable artifacts for every stage: shape, plan, candidate result, review report, QA report, retro, receipt.
+- Make **DevEx a first-class success metric**: the factory should feel obvious to run, easy to inspect, and safe to recover when something fails.
+- Document the **operator flow step-by-step** so a first-time user knows exactly how to move from install through init/doctor to a winning branch without tribal knowledge.
 - Keep runtime/execution isolation abstract enough that the repo can grow into stronger sandbox backends later without changing the workflow model.
 - Keep V1 composable and Pi-like: a small stable core with most domain behavior living in files and modular handlers.
+- Make the operator-facing product feel like a **global CLI tool**, while still keeping repo-local workflow state and artifacts explicit.
 
 **Non-Goals:**
 
@@ -61,6 +65,17 @@ Rationale:
 - They defer heavier runtime/platform complexity until the factory proves its core loop.
 
 Alternative considered: require container/VM sandboxing for every run. Rejected for V1 because it adds startup and platform complexity before the workflow and artifact model are proven.
+
+### Decision 2b: Borrow Sandcastle's model, do not use it directly in V1
+
+V1 should **borrow Sandcastle's execution shape** — thin orchestrator, sandbox-provider seam, branch/merge discipline, and isolated runs — without taking a direct dependency on Sandcastle itself.
+
+Rationale:
+- This keeps V1's execution layer understandable and tailored to the software-factory workflow model.
+- It avoids coupling the product surface to a third-party orchestration library before we have validated our own repo law, workflow contracts, and DevEx.
+- It still preserves a future path to stronger sandbox providers if worktree-local execution stops being sufficient.
+
+Alternative considered: adopt Sandcastle directly as the V1 execution layer. Rejected for now because the current goal is to keep V1 lean, explicit, and easy to evolve around our own workflow and artifact model.
 
 ### Decision 3: The CLI/harness stays thin; workflow opinion lives in files
 
@@ -137,6 +152,89 @@ Rationale:
 
 Alternative considered: preload a huge set of generic rules. Rejected because it creates noise and false precision before the system has earned its complexity.
 
+### Decision 7: DevEx is a product requirement, not an afterthought
+
+V1 will optimize for a **clear operator experience** as aggressively as it optimizes for orchestration correctness.
+
+That means:
+- commands should be easy to discover and memorize
+- outputs should be readable to a human and machine-parseable for agents
+- failure states should explain how to recover
+- user flow steps should be documented explicitly in the repo and reflected in the command surface
+- installation should result in a recognizable global CLI plus explicit repo-local initialization
+
+Rationale:
+- A software factory with strong internals but weak operator experience will not get used enough to compound.
+- The human is still the manager, reviewer, and escalation path; making their flow awkward weakens the whole system.
+
+Alternative considered: defer DevEx until after runtime/orchestration work. Rejected because first-use clarity is part of the architecture, not a polish pass.
+
+### Decision 8: Split bootstrap commands from workflow commands
+
+V1 command design will distinguish between:
+- **bootstrap commands**: `init`, `doctor`
+- **workflow commands**: `shape`, `plan`, `prototype`, `review`, `qa`, `retro`
+
+`init` prepares repo-local factory state, while `doctor` validates readiness and explains recovery steps. The workflow commands operate on actual software-factory runs.
+
+Rationale:
+- This keeps installation/setup concerns separate from day-to-day factory usage.
+- It makes first-time-user docs and command help much easier to understand.
+- It aligns the global CLI install model with the repo-local state model.
+
+Alternative considered: hide setup inside the first workflow command. Rejected because it creates surprising side effects and weakens failure diagnosis.
+
+### Decision 9: Use `sf` as the operator-facing binary name in V1
+
+The global CLI should install an operator-facing binary named `sf`.
+
+Rationale:
+- It is short, memorable, and ergonomic for repeated daily use.
+- It keeps examples compact and readable.
+- The package can retain a longer npm package name while exposing `sf` as the primary executable.
+
+Alternative considered: use `software-factory` as the primary binary. Rejected because it is too long for high-frequency use.
+
+### Decision 10: Auto-generate differentiated prototype strategies by default
+
+`prototype --variants <n>` should generate differentiated strategy briefs automatically by default in V1.
+
+The default strategy family should bias toward:
+- conservative / low-risk
+- balanced / pragmatic
+- ambitious / high-upside
+
+Rationale:
+- It reduces first-use friction in the most important multi-candidate flow.
+- It makes the value of fanout visible without requiring extra operator setup.
+- Manual strategy overrides can still be added later.
+
+Alternative considered: require explicit strategy labels from the operator. Rejected for V1 because it adds friction to the core loop.
+
+### Decision 11: Start with three reviewer profiles in V1
+
+V1 reviewer fanout should include three default reviewer profiles:
+- spec-fit reviewer
+- architecture/code-quality reviewer
+- QA/test-signal reviewer
+
+Rationale:
+- This gives enough diversity of critique without creating a role zoo.
+- The profiles map cleanly to the operator's mental model: did it solve the task, is the implementation sound, and did verification hold up?
+
+Alternative considered: a single generic reviewer. Rejected because it weakens the point of independent reviewer fanout.
+
+### Decision 12: Start implementation worktree-first
+
+The first implementation slice should use worktree-local execution only, while preserving a future runtime seam for stronger isolation backends.
+
+Rationale:
+- It is the simplest path to proving the factory loop.
+- It keeps the first slice local, inspectable, and fast to debug.
+- It avoids premature complexity from container-first or remote runtime integrations.
+
+Alternative considered: ship an optional stronger runtime adapter immediately. Deferred until the worktree-based loop proves its limits.
+
 ## Architecture Overview
 
 ### Layer 1: Repo law / harness-ready substrate
@@ -165,6 +263,12 @@ Each workflow loads specific files and writes a specific artifact shape.
 
 This layer exposes commands and coordinates runs. It should remain intentionally small and scriptable.
 
+The CLI surface is split into:
+- **bootstrap**: `init`, `doctor`
+- **workflow**: `shape`, `plan`, `prototype`, `review`, `qa`, `retro`
+
+This keeps first-time setup and day-to-day factory operation distinct.
+
 ### Layer 4: Execution isolation layer
 
 V1 isolation uses git worktrees. The architecture should retain a runtime interface so heavier sandbox providers can be introduced later.
@@ -176,6 +280,60 @@ This is where the factory becomes more than a single-agent tool:
 - reviewer fanout
 - scorecard synthesis
 - human winner selection
+
+## Operator Flow (V1)
+
+The V1 user flow should be explicit and teachable:
+
+0. **Install the global CLI**
+   - operator runs the published global install command
+1. **Initialize the repo-local factory state**
+   - operator invokes `init`
+   - system scaffolds local factory files, folders, and config stubs as needed
+2. **Verify readiness**
+   - operator invokes `doctor`
+   - system validates setup, surfaces missing prerequisites, and explains next recovery steps
+3. **Start with an idea**
+   - operator invokes `shape`
+   - system produces a shape artifact with goal, constraints, and success criteria
+4. **Turn the idea into a buildable plan**
+   - operator invokes `plan`
+   - system produces implementation tasks, acceptance criteria, and verification plan
+5. **Generate multiple candidate prototypes**
+   - operator invokes `prototype --variants 3` (or another small count)
+   - system creates isolated candidates with differentiated strategy briefs
+6. **Inspect and compare candidates**
+   - operator reads candidate summaries and verification outputs
+7. **Run independent reviewers**
+   - operator invokes `review` against one or more candidates
+   - system emits separate reviewer artifacts and an aggregated scorecard
+8. **Run QA on the likely winner**
+   - operator invokes `qa`
+   - system validates the candidate through the documented verification path
+9. **Choose the winner**
+   - human remains the decision boundary for promotion/merge in V1
+10. **Capture the learning**
+   - operator invokes `retro`
+   - system records what should become a new rule, check, rubric, or runbook
+
+This flow is not just documentation; the command surface, artifact contracts, and run directories should make these steps obvious in practice.
+
+## DevEx Requirements
+
+The software factory should feel usable by a first-time operator, not only architecturally correct.
+
+V1 DevEx expectations:
+- one obvious install path for a first-time operator
+- that install path should prefer a **global npm CLI install** for the operator-facing command when practical
+- one obvious command path per stage
+- predictable output locations
+- receipts/status visible without spelunking
+- errors that explain the next recovery step
+- examples in docs and templates that match the real command surface
+- command names and flags that map cleanly to the operator’s mental model
+- an install/setup flow that ends with a runnable `doctor` check, not just dependency installation
+
+A factory that is technically powerful but awkward to operate fails the product goal.
 
 ## Risks / Trade-offs
 
@@ -194,8 +352,6 @@ This is where the factory becomes more than a single-agent tool:
 
 These are intentionally left for review before implementation, not silently decided in code:
 
-1. Should V1 use only worktrees, or should it ship with an optional stronger runtime adapter immediately?
-2. How many built-in reviewer profiles are enough for V1 without becoming a role zoo?
-3. Should `prototype --variants N` generate differentiated strategy briefs automatically, or should the user provide strategy labels explicitly?
-4. What is the right candidate scorecard weighting between correctness, design quality, and implementation simplicity?
-5. What is the first real dogfood workload we will use to validate the system before broadening the command surface?
+1. Which Sandcastle ideas do we want to copy first in V1 beyond the already-agreed thin orchestrator + sandbox seam + branch discipline?
+2. What is the right candidate scorecard weighting between correctness, design quality, and implementation simplicity?
+3. What is the first real dogfood workload we will use to validate the system before broadening the command surface?
